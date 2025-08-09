@@ -9,28 +9,29 @@ app = FastAPI(title="Candles API")
 
 ALLOWED_ORIGINS = [
     "http://localhost:5173",     # Vite dev
-    "http://127.0.0.1:5173",     # sometimes Vite uses 127.0.0.1
-    "http://localhost:4173",     # vite preview (npm run preview)
-    "http://127.0.0.1:4173",
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],      # TEMP: open wide to verify
+    allow_origins=ALLOWED_ORIGINS,      # TEMP: open wide to verify
     allow_methods=["*"],
     allow_headers=["*"],
-    allow_credentials=False,  # must be False when using "*"
+    allow_credentials=True,  # must be False when using "*"
 )
 
 @app.get("/candles/{symbol}")
-def get_candles(symbol: str):
+def get_candles(symbol: str, months: int = 6, granularity: str = "1d"):
+    assert isinstance(months, int) and months > 0 and months <= 60, "months must be an integer between 1 and 60"
+    allowed_granularities = {"1d", "1wk", "1mo", "1m", "5m", "15m", "30m", "60m", "90m"}
+    assert granularity in allowed_granularities, f"granularity must be one of {allowed_granularities}"
     sym = symbol.upper().strip()
 
     # Force column-oriented output to avoid MultiIndex when possible
+    period = f"{months}mo"
     df = yf.download(
         sym,
-        period="6mo",
-        interval="1d",
+        period=period,
+        interval=granularity,
         auto_adjust=False,
         progress=False,
         group_by="column",
