@@ -4,6 +4,7 @@ import type { LineData, UTCTimestamp } from "lightweight-charts";
 import type { Candle } from "@/types"
 import ButtonGroup from "@components/ButtonGroup";
 import PriceChartView from "./PriceChartView";
+import StockSelector from "./StockSelector";
 import {
   toUTCTS,
   asUnixSeconds,
@@ -14,11 +15,11 @@ import {
 
 import { fetchCandles } from "@/lib/api";
 
-export default function PriceChart({
-  symbol = "TSLA",
-}: {
-  symbol?: string;
-}) {
+const STOCKS = ["TSLA", "AAPL", "MSFT", "GOOG", "AMZN", "NVDA", "META", "NFLX", "AMD", "INTC"];
+
+export default function PriceChart() {
+  const [symbol, setSymbol] = useState<string>("TSLA");
+  const [search, setSearch] = useState<string>("");
   const [range, setRange] = useState<number>(6);
   const [granularity, setGranularity] = useState<string>("1d");
 
@@ -91,9 +92,17 @@ export default function PriceChart({
 
       {/* Header + Controls */}
       <header className="mb-4 flex w-full flex-wrap items-center justify-between gap-3">
-        <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white">
-          {symbol} <span className="text-gray-400">• {rangeLabel[range]}</span>
-        </h1>
+        <div className="flex flex-col gap-2">
+          <StockSelector
+            setSymbol={setSymbol}
+            search={search}
+            setSearch={setSearch}
+            stocks={STOCKS}
+          />
+          <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white">
+            {symbol} <span className="text-gray-400">• {rangeLabel[range]}</span>
+          </h1>
+        </div>
 
         <div className="flex items-center gap-2">
           <ButtonGroup<number>

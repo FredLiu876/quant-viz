@@ -14,11 +14,12 @@ export const rangeButtonKeyValues = [
   { label: "3M", value: 3 },
   { label: "6M", value: 6 },
   { label: "1Y", value: 12 },
+  { label: "5Y", value: 60 },
   { label: "ALL", value: 0 },
 ];
 
 export const granularityButtonKeyValues = [
-//   { label: "1m", value: "1m" },
+//   { label: "1m", value: "1m" }, Only 8 days allowed
 //   { label: "5m", value: "5m" },
 //   { label: "15m", value: "15m" },
 //   { label: "30m", value: "30m" },
