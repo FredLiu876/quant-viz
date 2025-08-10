@@ -4,7 +4,7 @@ import type { LineData, UTCTimestamp } from "lightweight-charts";
 import type { Candle } from "@/types"
 import ButtonGroup from "@components/ButtonGroup";
 import PriceChartView from "./PriceChartView";
-import StockSelector from "./StockSelector";
+import SearchDropdown from "@components/SearchDropdown";
 import {
   toUTCTS,
   asUnixSeconds,
@@ -93,11 +93,11 @@ export default function PriceChart() {
       {/* Header + Controls */}
       <header className="mb-4 flex w-full flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-2">
-          <StockSelector
-            setSymbol={setSymbol}
+          <SearchDropdown
+            setValue={setSymbol}
             search={search}
             setSearch={setSearch}
-            stocks={STOCKS}
+            options={STOCKS}
           />
           <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white">
             {symbol} <span className="text-gray-400">• {rangeLabel[range]}</span>

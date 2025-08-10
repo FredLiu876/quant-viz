@@ -1,19 +1,17 @@
 import React from "react";
 
-interface StockSelectorProps {
-  symbol: string;
-  setSymbol: (s: string) => void;
+interface SearchDropdownProps {
+  setValue: (s: string) => void;
   search: string;
   setSearch: (s: string) => void;
-  stocks: string[];
+  options: string[];
 }
 
-const StockSelector: React.FC<StockSelectorProps> = ({
-  symbol,
-  setSymbol,
+const StockSelector: React.FC<SearchDropdownProps> = ({
+  setValue,
   search,
   setSearch,
-  stocks,
+  options,
 }) => {
   const [open, setOpen] = React.useState(false);
   const [highlighted, setHighlighted] = React.useState<number>(-1);
@@ -23,14 +21,14 @@ const StockSelector: React.FC<StockSelectorProps> = ({
 
   const query = search?.toUpperCase?.() ?? "";
 
-  const options = React.useMemo(() => {
+  const filteredOptions = React.useMemo(() => {
     if (!query) return [] as string[];
     const q = query.trim();
     if (!q) return [] as string[];
     // Case-insensitive contains match; unique; top 8
     const seen = new Set<string>();
     const filtered = [] as string[];
-    for (const s of stocks) {
+    for (const s of options) {
       const up = s.toUpperCase();
       if (up.includes(q) && !seen.has(up)) {
         seen.add(up);
@@ -39,7 +37,7 @@ const StockSelector: React.FC<StockSelectorProps> = ({
       }
     }
     return filtered;
-  }, [query, stocks]);
+  }, [query, options]);
 
   // Open/close behavior
   React.useEffect(() => {
@@ -56,14 +54,14 @@ const StockSelector: React.FC<StockSelectorProps> = ({
 
   React.useEffect(() => {
     // When query changes, reset highlight; open if there's something to show
-    setHighlighted(options.length ? 0 : -1);
+    setHighlighted(filteredOptions.length ? 0 : -1);
     setOpen(Boolean(query));
-  }, [query, options.length]);
+  }, [query, filteredOptions.length]);
 
   const choose = (val: string) => {
     const up = val.toUpperCase();
     setSearch(up);
-    setSymbol(up);
+    setValue(up);
     setOpen(false);
     setHighlighted(-1);
     inputRef.current?.blur();
@@ -72,19 +70,19 @@ const StockSelector: React.FC<StockSelectorProps> = ({
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      if (!open && options.length) setOpen(true);
-      if (options.length) {
-        setHighlighted((h) => (h + 1) % options.length);
+      if (!open && filteredOptions.length) setOpen(true);
+      if (filteredOptions.length) {
+        setHighlighted((h) => (h + 1) % filteredOptions.length);
       }
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      if (options.length) {
-        setHighlighted((h) => (h - 1 + options.length) % options.length);
+      if (filteredOptions.length) {
+        setHighlighted((h) => (h - 1 + filteredOptions.length) % filteredOptions.length);
       }
     } else if (e.key === "Enter") {
       e.preventDefault();
-      if (open && highlighted >= 0 && highlighted < options.length) {
-        choose(options[highlighted]);
+      if (open && highlighted >= 0 && highlighted < filteredOptions.length) {
+        choose(filteredOptions[highlighted]);
       } else if (query) {
         // Search on its own even if no dropdown results
         choose(query);
@@ -118,7 +116,7 @@ const StockSelector: React.FC<StockSelectorProps> = ({
           aria-controls={listboxId}
           aria-expanded={open}
           role="combobox"
-          className="w-full bg-transparent px-1 py-2 pr-10 text-sm font-mono uppercase tracking-wide placeholder-white/40 outline-none"
+          className="w-full bg-transparent px-1 py-2 pr-10 text-sm font-mono uppercase tracking-wide text-white placeholder-white/40 outline-none"
         />
         {/* Clear / Go actions */}
         {query ? (
@@ -157,9 +155,9 @@ const StockSelector: React.FC<StockSelectorProps> = ({
           role="listbox"
           className="absolute left-0 right-0 z-50 mt-2 overflow-hidden rounded-2xl border border-white/10 bg-[#0e1117] shadow-2xl"
         >
-          {options.length > 0 ? (
+          {filteredOptions.length > 0 ? (
             <ul className="max-h-64 overflow-auto py-1">
-              {options.map((opt, idx) => {
+              {filteredOptions.map((opt, idx) => {
                 const active = idx === highlighted;
                 return (
                   <li key={opt} role="option" aria-selected={active}>
@@ -168,28 +166,28 @@ const StockSelector: React.FC<StockSelectorProps> = ({
                       onMouseEnter={() => setHighlighted(idx)}
                       onClick={() => choose(opt)}
                       className={
-                        "flex w-full items-center justify-between px-3 py-2 text-left text-sm transition " +
+                        "flex w-full items-center justify-between px-3 py-2 text-left text-sm transition text-white " +
                         (active ? "bg-white/10" : "hover:bg-white/5")
                       }
                     >
-                      <span className="font-mono uppercase tracking-wide">{opt}</span>
-                      <span className="text-[10px] uppercase opacity-60">Select</span>
+                      <span className="font-mono uppercase tracking-wide text-white">{opt}</span>
+                      <span className="text-[10px] uppercase opacity-60 text-gray-200">Select</span>
                     </button>
                   </li>
                 );
               })}
             </ul>
           ) : (
-            <div className="px-3 py-3 text-sm text-white/70">
+            <div className="px-3 py-3 text-sm text-gray-200">
               <div className="mb-1">No matches.</div>
               {query && (
                 <button
                   type="button"
                   onClick={() => choose(query)}
-                  className="mt-1 inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-2 py-1 text-xs hover:bg-white/10"
+                  className="mt-1 inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-2 py-1 text-xs hover:bg-white/10 text-gray-200"
                 >
                   Press Enter (or click) to search for
-                  <span className="font-mono uppercase tracking-wide">{query}</span>
+                  <span className="font-mono uppercase tracking-wide text-white">{query}</span>
                 </button>
               )}
             </div>
