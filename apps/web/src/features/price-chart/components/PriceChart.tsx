@@ -13,9 +13,8 @@ import {
   granularityButtonKeyValues
 } from "../utils/utils";
 
-import { fetchCandles } from "@/lib/api";
-
-const STOCKS = ["TSLA", "AAPL", "MSFT", "GOOG", "AMZN", "NVDA", "META", "NFLX", "AMD", "INTC"];
+import { fetchCandles } from "@lib/api";
+import { STOCKS } from "@lib/constants";
 
 export default function PriceChart() {
   const [symbol, setSymbol] = useState<string>("TSLA");
