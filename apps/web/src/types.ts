@@ -6,3 +6,16 @@ export type Candle = {
   close: number;
   volume?: number;
 };
+
+export type RunRequest = {
+  code: string;
+  stdin?: string;
+  timeoutMs?: number;
+};
+
+export type RunResult = {
+  timedOut: boolean;
+  exitCode: number | null;
+  stdout: string;
+  stderr: string;
+};
