@@ -1,9 +1,28 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import yfinance as yf
-from operators.basic import *
+from alpha import alpha_strategy
+import json
+import os
 
+def buy(capital, current_stock_price):
+    """
+    Calculate the number of shares to buy with the given capital at the current stock price.
+
+    Parameters:
+    capital (float): The amount of money available to invest. Must be non-negative.
+    current_stock_price (float): The price of a single share of the stock.
+
+    Returns:
+    float: The number of shares that can be purchased with the given capital.
+
+    Notes:
+    - Still needs to model the transaction costs
+    """
+
+    assert capital >= 0, "Capital is negative! Revisit for bugs or maybe this alpha is gonna make u bankrupt"
+    shares_to_buy = capital/current_stock_price
+    return shares_to_buy
 
 def closing_prices(stocks):
     """
@@ -71,54 +90,36 @@ def count_transactions(alpha_matrix):
     
     return position_changes
 
-
-def visualize_alpha(stock, alpha_strategy):
+def hold_indefinitely(close_prices, capital):
     """
-    Visualize the performance of an alpha strategy on a given stock.
+    Generate an alpha matrix for a baseline strategy where the initial capital is completely invested in the stock from the first available day of data and never sold.
 
-    Parameters
-    ----------
-    stock : str
-        The stock to visualize.
-    alpha_strategy : function
-        The alpha strategy to visualize
+    Parameters:
+    close_prices (pandas.DataFrame): A matrix containing the closing prices for each stock on each day (rows for stocks, columns for days).
+    capital (float): The initial capital to be invested.
 
-    Returns
-    -------
-    fig, ax : matplotlib.Figure, matplotlib.Axes
-        The figure and axes of the plot. You can just immediately plt.show(), or you can use fig and ax to customize the graph further
-
+    Returns:
+    np.matrix: A matrix representing the number of shares of each stock that should be bought or sold on each day (rows for stocks, columns for days).
     """
+    all_stocks = list(close_prices.columns)
+    alpha_matrix = []
+    for col in all_stocks:
+        day_over_day = list(close_prices[col])
+        stocks_per_day = []
+        for i in range(len(day_over_day)):
+            # Usually this means stock price hasn't existed yet
+            if day_over_day[i] == 0:
+                stocks_per_day.append(0)
+                continue
 
-    capital = 10000
+            if stocks_per_day == [] or stocks_per_day[-1] == 0:
+                stocks_per_day.append(buy(capital, day_over_day[i]))
+            else:
+                stocks_per_day.append(stocks_per_day[-1])
+        
+        alpha_matrix.append(stocks_per_day)
 
-    close_prices = closing_prices([stock])
-    alpha_matrix = alpha_strategy(close_prices, capital)
-    close_prices = close_prices[stock]
-
-    fig, ax = plt.subplots(figsize=(12, 8))
-    ax.plot(close_prices.index, close_prices, label="Stock closing price")
-
-    # Plot green if alpha matrix > 0, otherwise red
-    alpha_matrix_plotted = pd.Series(alpha_matrix.tolist()[0], index=close_prices.index)
-    buying_in = alpha_matrix_plotted > 0
-    current_in_range = False
-    for i, in_range in enumerate(buying_in):
-        if in_range and not current_in_range:
-            beginning_of_range = i
-            current_in_range = True
-        elif not in_range and current_in_range:
-            current_in_range = False
-            ax.axvspan(close_prices.index[beginning_of_range], close_prices.index[i], color='green', alpha=0.3)
-    if current_in_range:
-        ax.axvspan(close_prices.index[beginning_of_range], close_prices.index[-1], color='green', alpha=0.3)
-
-    ax.set_xlabel('Date')
-    ax.set_ylabel('Closing Price')
-    ax.set_title(f'{stock} Closing Prices and Alpha Positions')
-    ax.legend()
-    return fig, ax
-
+    return np.matrix(alpha_matrix)
 
 def test_versus_baseline(stocks, alpha_strategy):
     """
@@ -159,12 +160,30 @@ def format_results(results):
     """
 
     total_pnl, total_pnl_baseline, percentage_improvement, transaction_costs, transaction_costs_baseline = results
-    print("\n\nWhen using an initial capital of 10000...\n")
-    print("RESULTS FROM THIS ALPHA:")
-    print(f"Total PnL: {round(total_pnl, 2)}\n")
-    print("COMPARED TO BASELINE OF HOLDING FOREVER:")
-    print(f"Total PnL: {round(total_pnl_baseline, 2)}\n")
-    print(f"PnL as a Percentage of the Baseline: {percentage_improvement}%")
+    # print("\n\nWhen using an initial capital of 10000...\n")
+    # print("RESULTS FROM THIS ALPHA:")
+    # print(f"Total PnL: {round(total_pnl, 2)}\n")
+    # print("COMPARED TO BASELINE OF HOLDING FOREVER:")
+    # print(f"Total PnL: {round(total_pnl_baseline, 2)}\n")
+    # print(f"PnL as a Percentage of the Baseline: {percentage_improvement}%")
 
-    print(f"\n\nNumber of transactions for this alpha are: {np.sum(transaction_costs)}")
-    print(f"Number of transactions for the baseline are: {np.sum(transaction_costs_baseline)}")
+    # print(f"\n\nNumber of transactions for this alpha are: {np.sum(transaction_costs)}")
+    # print(f"Number of transactions for the baseline are: {np.sum(transaction_costs_baseline)}")
+
+    results_dict = {
+        "total_pnl": round(total_pnl, 2),
+        "total_pnl_baseline": round(total_pnl_baseline, 2),
+        "percentage_improvement": percentage_improvement,
+        "transaction_costs": int(np.sum(transaction_costs)),
+        "transaction_costs_baseline": int(np.sum(transaction_costs_baseline))
+    }
+    result_path = os.environ.get("RESULT_PATH", "/output/result.json")
+
+    # Make the file:
+    os.makedirs(os.path.dirname(result_path), exist_ok=True)
+
+    with open(result_path, "w") as f:
+        json.dump(results_dict, f, indent=4)
+
+result = test_versus_baseline(["TSLA"], alpha_strategy)
+format_results(result)
